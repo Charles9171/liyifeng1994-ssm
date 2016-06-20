@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>ssm by liyifeng1994</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">ssm</h1>
+      <h2 class="project-tagline">手把手教你整合最优雅SSM框架：SpringMVC + Spring + MyBatis</h2>
+      <a href="https://github.com/liyifeng1994/ssm" class="btn">View on GitHub</a>
+      <a href="https://github.com/liyifeng1994/ssm/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/liyifeng1994/ssm/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="ssm" class="anchor" href="#ssm" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>SSM</h1>
+
+<p>手把手教你整合最优雅SSM框架：SpringMVC + Spring + MyBatis</p>
+
+<p>博客地址：<a href="http://blog.csdn.net/qq598535550/article/details/51703190">http://blog.csdn.net/qq598535550/article/details/51703190</a></p>
+
+<hr>
+
+<blockquote>
+<p>我们看招聘信息的时候，经常会看到这一点，需要具备SSH框架的技能；而且在大部分教学课堂中，也会把SSH作为最核心的教学内容。
+但是，我们在实际应用中发现，SpringMVC可以完全替代Struts，配合注解的方式，编程非常快捷，而且通过restful风格定义url，让地址看起来非常优雅。
+另外，MyBatis也可以替换Hibernate，正因为MyBatis的半自动特点，我们程序猿可以完全掌控SQL，这会让有数据库经验的程序猿能开发出高效率的SQL语句，而且XML配置管理起来也非常方便。
+好了，如果你也认同我的看法，那么下面我们一起来做整合吧！</p>
+</blockquote>
+
+<p>在写代码之前我们先了解一下这三个框架分别是干什么的？
+相信大以前也看过不少这些概念，我这就用大白话来讲，如果之前有了解过可以跳过这一大段，直接看代码！</p>
+
+<ol>
+<li><p>SpringMVC：它用于web层，相当于controller（等价于传统的servlet和struts的action），用来处理用户请求。举个例子，用户在地址栏输入http://网站域名/login，那么springmvc就会拦截到这个请求，并且调用controller层中相应的方法，（中间可能包含验证用户名和密码的业务逻辑，以及查询数据库操作，但这些都不是springmvc的职责），最终把结果返回给用户，并且返回相应的页面（当然也可以只反馈josn/xml等格式数据）。springmvc就是做前面和后面过程的活，与用户打交道！！</p></li>
+<li><p>Spring：太强大了，以至于我无法用一个词或一句话来概括它。但与我们平时开发接触最多的估计就是IOC容器，它可以装载bean（也就是我们java中的类，当然也包括service dao里面的），有了这个机制，我们就不用在每次使用这个类的时候为它初始化，很少看到关键字new。另外spring的aop，事务管理等等都是我们经常用到的。</p></li>
+<li><p>MyBatis：如果你问我它跟鼎鼎大名的Hibernate有什么区别？我只想说，他更符合我的需求。第一，它能自由控制sql，这会让有数据库经验的人（当然不是说我啦~捂脸~）编写的代码能搞提升数据库访问的效率。第二，它可以使用xml的方式来组织管理我们的sql，因为一般程序出错很多情况下是sql出错，别人接手代码后能快速找到出错地方，甚至可以优化原来写的sql。</p></li>
+</ol>
+
+<hr>
+
+<h2>
+<a id="ssm框架整合配置" class="anchor" href="#ssm%E6%A1%86%E6%9E%B6%E6%95%B4%E5%90%88%E9%85%8D%E7%BD%AE" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>SSM框架整合配置</h2>
+
+<p>好了，前面bb那么多，下面我们真正开始敲代码了~</p>
+
+<p>首先我们打开IED，我这里用的是eclipse（你们应该也是用的这个，对吗？），创建一个动态web项目，建立好相应的<strong>目录结构</strong>（重点！）</p>
+
+<p><img src="http://img.blog.csdn.net/20160618002041099" alt="项目结构图"></p>
+
+<p>（打了马赛克是因为这里还用不到，你们不要那么污好不好？）</p>
+
+<p>我说一下每个目录都有什么用吧（第一次画表格，我发现markdown的表格语法很不友好呀~）
+这个目录结构同时也遵循maven的目录规范~
+| 文件名 | 作用 |
+| --- | --- |
+| src | 根目录，没什么好说的，下面有main和test。 |
+| - main | 主要目录，可以放java代码和一些资源文件。 |
+| - - java | 存放我们的java代码，这个文件夹要使用Build Path -&gt; Use as Source Folder，这样看包结构会方便很多，新建的包就相当于在这里新建文件夹咯。 |
+| - - resources | 存放资源文件，譬如各种的spring，mybatis，log配置文件。 |
+| - - - mapper | 存放dao中每个方法对应的sql，在这里配置，无需写daoImpl。
+| - - - spring | 这里当然是存放spring相关的配置文件，有dao service web三层。 |
+| - - - sql | 其实这个可以没有，但是为了项目完整性还是加上吧。 |
+| - - - webapp | 这个貌似是最熟悉的目录了，用来存放我们前端的静态资源，如jsp js css。 |
+| - - - - resources | 这里的资源是指项目的静态资源，如js css images等。 |
+| - - - - WEB-INF | 很重要的一个目录，外部浏览器无法访问，只有羡慕内部才能访问，可以把jsp放在这里，另外就是web.xml了。你可能有疑问了，为什么上面java中的resources里面的配置文件不妨在这里，那么是不是会被外部窃取到？你想太多了，部署时候基本上只有webapp里的会直接输出到根目录，其他都会放入WEB-INF里面，项目内部依然可以使用classpath:XXX来访问，好像IDE里可以设置部署输出目录，这里扯远了~ |
+| - test | 这里是测试分支。 |
+| - - java | 测试java代码，应遵循包名相同的原则，这个文件夹同样要使用Build Path -&gt; Use as Source Folder，这样看包结构会方便很多。 |
+| - - resources | 没什么好说的，好像也很少用到，但这个是maven的规范。 |</p>
+
+<hr>
+
+<p>我先新建好几个必要的<strong>包</strong>，并为大家讲解一下每个包的作用，顺便理清一下后台的思路~</p>
+
+<p><img src="http://img.blog.csdn.net/20160618004306660" alt="包结构图"></p>
+
+<table>
+<thead>
+<tr>
+<th>包名</th>
+<th>名称</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dao</td>
+<td>数据访问层（接口）</td>
+<td>与数据打交道，可以是数据库操作，也可以是文件读写操作，甚至是redis缓存操作，总之与数据操作有关的都放在这里，也有人叫做dal或者数据持久层都差不多意思。为什么没有daoImpl，因为我们用的是mybatis，所以可以直接在配置文件中实现接口的每个方法。</td>
+</tr>
+<tr>
+<td>entity</td>
+<td>实体类</td>
+<td>一般与数据库的表相对应，封装dao层取出来的数据为一个对象，也就是我们常说的pojo，一般只在dao层与service层之间传输。</td>
+</tr>
+<tr>
+<td>dto</td>
+<td>数据传输层</td>
+<td>刚学框架的人可能不明白这个有什么用，其实就是用于service层与web层之间传输，为什么不直接用entity（pojo）？其实在实际开发中发现，很多时间一个entity并不能满足我们的业务需求，可能呈现给用户的信息十分之多，这时候就有了dto，也相当于vo，记住一定不要把这个混杂在entity里面，答应我好吗？</td>
+</tr>
+<tr>
+<td>service</td>
+<td>业务逻辑（接口）</td>
+<td>写我们的业务逻辑，也有人叫bll，在设计业务接口时候应该站在“使用者”的角度。额，不要问我为什么这里没显示！IDE调皮我也拿它没办法~</td>
+</tr>
+<tr>
+<td>serviceImpl</td>
+<td>业务逻辑（实现）</td>
+<td>实现我们业务接口，一般事务控制是写在这里，没什么好说的。</td>
+</tr>
+<tr>
+<td>web</td>
+<td>控制器</td>
+<td>springmvc就是在这里发挥作用的，一般人叫做controller控制器，相当于struts中的action。</td>
+</tr>
+</tbody>
+</table>
+
+<hr>
+
+<p>还有最后一步基础工作，导入我们相应的jar包，我使用的是maven来管理我们的jar，所以只需要在<code>poom.xml</code>中加入相应的依赖就好了，如果不使用maven的可以自己去官网下载相应的jar，放到项目WEB-INF/lib目录下。关于maven的学习大家可以看<a href="http://www.imooc.com/learn/443">慕课网的视频教程</a>，这里就不展开了。我把项目用到的jar都写在下面，版本都不是最新的，大家有经验的话可以自己调整版本号。另外，所有jar都会与项目一起打包放到我的<a href="https://github.com/liyifeng1994/ssm">github</a>上，喜欢的给个star吧~</p>
+
+<p><strong>poom.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">project</span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://maven.apache.org/POM/4.0.0<span class="pl-pds">"</span></span> <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">xsi</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.w3.org/2001/XMLSchema-instance<span class="pl-pds">"</span></span>
+    <span class="pl-e">xsi</span><span class="pl-e">:</span><span class="pl-e">schemaLocation</span>=<span class="pl-s"><span class="pl-pds">"</span>http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">modelVersion</span>&gt;4.0.0&lt;/<span class="pl-ent">modelVersion</span>&gt;
+    &lt;<span class="pl-ent">groupId</span>&gt;com.soecode.ssm&lt;/<span class="pl-ent">groupId</span>&gt;
+    &lt;<span class="pl-ent">artifactId</span>&gt;ssm&lt;/<span class="pl-ent">artifactId</span>&gt;
+    &lt;<span class="pl-ent">packaging</span>&gt;war&lt;/<span class="pl-ent">packaging</span>&gt;
+    &lt;<span class="pl-ent">version</span>&gt;0.0.1-SNAPSHOT&lt;/<span class="pl-ent">version</span>&gt;
+    &lt;<span class="pl-ent">name</span>&gt;ssm Maven Webapp&lt;/<span class="pl-ent">name</span>&gt;
+    &lt;<span class="pl-ent">url</span>&gt;http://github.com/liyifeng1994/ssm&lt;/<span class="pl-ent">url</span>&gt;
+    &lt;<span class="pl-ent">dependencies</span>&gt;
+        <span class="pl-c">&lt;!-- 单元测试 --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;junit&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;junit&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.11&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+
+        <span class="pl-c">&lt;!-- 1.日志 --&gt;</span>
+        <span class="pl-c">&lt;!-- 实现slf4j接口并整合 --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;ch.qos.logback&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;logback-classic&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;1.1.1&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+
+        <span class="pl-c">&lt;!-- 2.数据库 --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;mysql&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;mysql-connector-java&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;5.1.37&lt;/<span class="pl-ent">version</span>&gt;
+            &lt;<span class="pl-ent">scope</span>&gt;runtime&lt;/<span class="pl-ent">scope</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;c3p0&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;c3p0&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;0.9.1.2&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+
+        <span class="pl-c">&lt;!-- DAO: MyBatis --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.mybatis&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;mybatis&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;3.3.0&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.mybatis&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;mybatis-spring&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;1.2.3&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+
+        <span class="pl-c">&lt;!-- 3.Servlet web --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;taglibs&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;standard&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;1.1.2&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;jstl&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;jstl&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;1.2&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;com.fasterxml.jackson.core&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;jackson-databind&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;2.5.4&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;javax.servlet&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;javax.servlet-api&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;3.1.0&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+
+        <span class="pl-c">&lt;!-- 4.Spring --&gt;</span>
+        <span class="pl-c">&lt;!-- 1)Spring核心 --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.springframework&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;spring-core&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.1.7.RELEASE&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.springframework&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;spring-beans&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.1.7.RELEASE&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.springframework&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;spring-context&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.1.7.RELEASE&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        <span class="pl-c">&lt;!-- 2)Spring DAO层 --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.springframework&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;spring-jdbc&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.1.7.RELEASE&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.springframework&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;spring-tx&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.1.7.RELEASE&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        <span class="pl-c">&lt;!-- 3)Spring web --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.springframework&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;spring-web&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.1.7.RELEASE&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.springframework&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;spring-webmvc&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.1.7.RELEASE&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        <span class="pl-c">&lt;!-- 4)Spring test --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.springframework&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;spring-test&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;4.1.7.RELEASE&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+
+        <span class="pl-c">&lt;!-- redis客户端:Jedis --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;redis.clients&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;jedis&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;2.7.3&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;com.dyuproject.protostuff&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;protostuff-core&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;1.0.8&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;com.dyuproject.protostuff&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;protostuff-runtime&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;1.0.8&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+
+        <span class="pl-c">&lt;!-- Map工具类 --&gt;</span>
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;commons-collections&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;commons-collections&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;3.2&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+    &lt;/<span class="pl-ent">dependencies</span>&gt;
+    &lt;<span class="pl-ent">build</span>&gt;
+        &lt;<span class="pl-ent">finalName</span>&gt;ssm&lt;/<span class="pl-ent">finalName</span>&gt;
+    &lt;/<span class="pl-ent">build</span>&gt;
+&lt;/<span class="pl-ent">project</span>&gt;
+</pre></div>
+
+<hr>
+
+<p>下面真的要开始进行编码工作了，坚持到这里辛苦大家了~</p>
+
+<p>第一步：我们先在<code>spring</code>文件夹里新建<code>spring-dao.xml</code>文件，因为spring的配置太多，我们这里分三层，分别是dao service web。</p>
+
+<ol>
+<li>读入数据库连接相关参数（可选）</li>
+<li>配置数据连接池
+
+<ol>
+<li>配置连接属性，可以不读配置项文件直接在这里写死</li>
+<li>配置c3p0，只配了几个常用的</li>
+</ol>
+</li>
+<li>配置SqlSessionFactory对象（mybatis）</li>
+<li>扫描dao层接口，动态实现dao接口，也就是说不需要daoImpl，sql和参数都写在xml文件上</li>
+</ol>
+
+<p><strong>spring-dao.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;<span class="pl-ent">beans</span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/beans<span class="pl-pds">"</span></span>
+    <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">xsi</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.w3.org/2001/XMLSchema-instance<span class="pl-pds">"</span></span> <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">context</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/context<span class="pl-pds">"</span></span>
+    <span class="pl-e">xsi</span><span class="pl-e">:</span><span class="pl-e">schemaLocation</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/beans</span>
+<span class="pl-s">    http://www.springframework.org/schema/beans/spring-beans.xsd</span>
+<span class="pl-s">    http://www.springframework.org/schema/context</span>
+<span class="pl-s">    http://www.springframework.org/schema/context/spring-context.xsd<span class="pl-pds">"</span></span>&gt;
+    <span class="pl-c">&lt;!-- 配置整合mybatis过程 --&gt;</span>
+    <span class="pl-c">&lt;!-- 1.配置数据库相关参数properties的属性：${url} --&gt;</span>
+    &lt;<span class="pl-ent">context</span><span class="pl-ent">:</span><span class="pl-ent">property-placeholder</span> <span class="pl-e">location</span>=<span class="pl-s"><span class="pl-pds">"</span>classpath:jdbc.properties<span class="pl-pds">"</span></span> /&gt;
+
+    <span class="pl-c">&lt;!-- 2.数据库连接池 --&gt;</span>
+    &lt;<span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>dataSource<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>com.mchange.v2.c3p0.ComboPooledDataSource<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c">&lt;!-- 配置连接池属性 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>driverClass<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>${jdbc.driver}<span class="pl-pds">"</span></span> /&gt;
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>jdbcUrl<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>${jdbc.url}<span class="pl-pds">"</span></span> /&gt;
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>user<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>${jdbc.username}<span class="pl-pds">"</span></span> /&gt;
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>${jdbc.password}<span class="pl-pds">"</span></span> /&gt;
+
+        <span class="pl-c">&lt;!-- c3p0连接池的私有属性 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>maxPoolSize<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>30<span class="pl-pds">"</span></span> /&gt;
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>minPoolSize<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>10<span class="pl-pds">"</span></span> /&gt;
+        <span class="pl-c">&lt;!-- 关闭连接后不自动commit --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>autoCommitOnClose<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>false<span class="pl-pds">"</span></span> /&gt;
+        <span class="pl-c">&lt;!-- 获取连接超时时间 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>checkoutTimeout<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>10000<span class="pl-pds">"</span></span> /&gt;
+        <span class="pl-c">&lt;!-- 当获取连接失败重试次数 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>acquireRetryAttempts<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>2<span class="pl-pds">"</span></span> /&gt;
+    &lt;/<span class="pl-ent">bean</span>&gt;
+
+    <span class="pl-c">&lt;!-- 3.配置SqlSessionFactory对象 --&gt;</span>
+    &lt;<span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>sqlSessionFactory<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.mybatis.spring.SqlSessionFactoryBean<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c">&lt;!-- 注入数据库连接池 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>dataSource<span class="pl-pds">"</span></span> <span class="pl-e">ref</span>=<span class="pl-s"><span class="pl-pds">"</span>dataSource<span class="pl-pds">"</span></span> /&gt;
+        <span class="pl-c">&lt;!-- 配置MyBaties全局配置文件:mybatis-config.xml --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>configLocation<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>classpath:mybatis-config.xml<span class="pl-pds">"</span></span> /&gt;
+        <span class="pl-c">&lt;!-- 扫描entity包 使用别名 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>typeAliasesPackage<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>com.soecode.lyf.entity<span class="pl-pds">"</span></span> /&gt;
+        <span class="pl-c">&lt;!-- 扫描sql配置文件:mapper需要的xml文件 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>mapperLocations<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>classpath:mapper/*.xml<span class="pl-pds">"</span></span> /&gt;
+    &lt;/<span class="pl-ent">bean</span>&gt;
+
+    <span class="pl-c">&lt;!-- 4.配置扫描Dao接口包，动态实现Dao接口，注入到spring容器中 --&gt;</span>
+    &lt;<span class="pl-ent">bean</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.mybatis.spring.mapper.MapperScannerConfigurer<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c">&lt;!-- 注入sqlSessionFactory --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>sqlSessionFactoryBeanName<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>sqlSessionFactory<span class="pl-pds">"</span></span> /&gt;
+        <span class="pl-c">&lt;!-- 给出需要扫描Dao接口包 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>basePackage<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>com.soecode.lyf.dao<span class="pl-pds">"</span></span> /&gt;
+    &lt;/<span class="pl-ent">bean</span>&gt;
+&lt;/<span class="pl-ent">beans</span>&gt;</pre></div>
+
+<p>因为数据库配置相关参数是读取配置文件，所以在<code>resources</code>文件夹里新建一个<code>jdbc.properties</code>文件，存放我们4个最常见的数据库连接属性，这是我本地的，大家记得修改呀~还有喜欢传到github上“大头虾们”记得删掉密码，不然别人就很容易得到你服务器的数据库配置信息，然后干一些羞羞的事情，你懂的！！</p>
+
+<p><strong>jdbc.properties</strong></p>
+
+<div class="highlight highlight-source-ini"><pre><span class="pl-k">jdbc.driver</span>=com.mysql.jdbc.Driver
+<span class="pl-k">jdbc.url</span>=jdbc:mysql://localhost:3307/ssm?<span class="pl-k">useUnicode</span>=true&amp;<span class="pl-k">characterEncoding</span>=utf8
+<span class="pl-k">jdbc.username</span>=root
+<span class="pl-k">jdbc.password</span>=</pre></div>
+
+<p><strong>友情提示</strong>：配置文件中的jdbc.username，如果写成username，可能会与系统环境中的username变量冲突，所以到时候真正连接数据库的时候，用户名就被替换成系统中的用户名（有得可能是administrator），那肯定是连接不成功的，这里有个小坑，我被坑了一晚上！！</p>
+
+<p>因为这里用到了mybatis，所以需要配置mybatis核心文件，在<code>recources</code>文件夹里新建<code>mybatis-config.xml</code>文件。</p>
+
+<ol>
+<li>使用自增主键</li>
+<li>使用列别名</li>
+<li>开启驼峰命名转换 create_time -&gt; createTime</li>
+</ol>
+
+<p><strong>mybatis-config.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span> ?&gt;
+&lt;!<span class="pl-k">DOCTYPE</span> <span class="pl-v">configuration</span>
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd"&gt;
+&lt;<span class="pl-ent">configuration</span>&gt;
+    <span class="pl-c">&lt;!-- 配置全局属性 --&gt;</span>
+    &lt;<span class="pl-ent">settings</span>&gt;
+        <span class="pl-c">&lt;!-- 使用jdbc的getGeneratedKeys获取数据库自增主键值 --&gt;</span>
+        &lt;<span class="pl-ent">setting</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>useGeneratedKeys<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> /&gt;
+
+        <span class="pl-c">&lt;!-- 使用列别名替换列名 默认:true --&gt;</span>
+        &lt;<span class="pl-ent">setting</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>useColumnLabel<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> /&gt;
+
+        <span class="pl-c">&lt;!-- 开启驼峰命名转换:Table{create_time} -&gt; Entity{createTime} --&gt;</span>
+        &lt;<span class="pl-ent">setting</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>mapUnderscoreToCamelCase<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> /&gt;
+    &lt;/<span class="pl-ent">settings</span>&gt;
+&lt;/<span class="pl-ent">configuration</span>&gt;</pre></div>
+
+<p>第二步：刚弄好dao层，接下来到service层了。在<code>spring</code>文件夹里新建<code>spring-service.xml</code>文件。</p>
+
+<ol>
+<li>扫描service包所有注解 <a href="https://github.com/Service" class="user-mention">@Service</a>
+</li>
+<li>配置事务管理器，把事务管理交由spring来完成</li>
+<li>配置基于注解的声明式事务，可以直接在方法上<a href="https://github.com/Transaction" class="user-mention">@Transaction</a>
+</li>
+</ol>
+
+<p><strong>spring-service.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;<span class="pl-ent">beans</span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/beans<span class="pl-pds">"</span></span>
+    <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">xsi</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.w3.org/2001/XMLSchema-instance<span class="pl-pds">"</span></span> 
+    <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">context</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/context<span class="pl-pds">"</span></span>
+    <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">tx</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/tx<span class="pl-pds">"</span></span>
+    <span class="pl-e">xsi</span><span class="pl-e">:</span><span class="pl-e">schemaLocation</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/beans</span>
+<span class="pl-s">    http://www.springframework.org/schema/beans/spring-beans.xsd</span>
+<span class="pl-s">    http://www.springframework.org/schema/context</span>
+<span class="pl-s">    http://www.springframework.org/schema/context/spring-context.xsd</span>
+<span class="pl-s">    http://www.springframework.org/schema/tx</span>
+<span class="pl-s">    http://www.springframework.org/schema/tx/spring-tx.xsd<span class="pl-pds">"</span></span>&gt;
+    <span class="pl-c">&lt;!-- 扫描service包下所有使用注解的类型 --&gt;</span>
+    &lt;<span class="pl-ent">context</span><span class="pl-ent">:</span><span class="pl-ent">component-scan</span> <span class="pl-e">base-package</span>=<span class="pl-s"><span class="pl-pds">"</span>com.soecode.lyf.service<span class="pl-pds">"</span></span> /&gt;
+
+    <span class="pl-c">&lt;!-- 配置事务管理器 --&gt;</span>
+    &lt;<span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>transactionManager<span class="pl-pds">"</span></span>
+        <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.springframework.jdbc.datasource.DataSourceTransactionManager<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c">&lt;!-- 注入数据库连接池 --&gt;</span>
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>dataSource<span class="pl-pds">"</span></span> <span class="pl-e">ref</span>=<span class="pl-s"><span class="pl-pds">"</span>dataSource<span class="pl-pds">"</span></span> /&gt;
+    &lt;/<span class="pl-ent">bean</span>&gt;
+
+    <span class="pl-c">&lt;!-- 配置基于注解的声明式事务 --&gt;</span>
+    &lt;<span class="pl-ent">tx</span><span class="pl-ent">:</span><span class="pl-ent">annotation-driven</span> <span class="pl-e">transaction-manager</span>=<span class="pl-s"><span class="pl-pds">"</span>transactionManager<span class="pl-pds">"</span></span> /&gt;
+&lt;/<span class="pl-ent">beans</span>&gt;</pre></div>
+
+<hr>
+
+<p>第三步：配置web层，在<code>spring</code>文件夹里新建<code>spring-web.xml</code>文件。</p>
+
+<ol>
+<li>开启SpringMVC注解模式，可以使用@RequestMapping，@PathVariable，@ResponseBody等</li>
+<li>对静态资源处理，如js，css，jpg等</li>
+<li>配置jsp 显示ViewResolver，例如在controller中某个方法返回一个string类型的"login"，实际上会返回"/WEB-INF/login.jsp"</li>
+<li>扫描web层 <a href="https://github.com/Controller" class="user-mention">@Controller</a>
+</li>
+</ol>
+
+<p><strong>spring-web.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;<span class="pl-ent">beans</span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/beans<span class="pl-pds">"</span></span>
+    <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">xsi</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.w3.org/2001/XMLSchema-instance<span class="pl-pds">"</span></span>
+    <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">context</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/context<span class="pl-pds">"</span></span>
+    <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">mvc</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/mvc<span class="pl-pds">"</span></span> 
+    <span class="pl-e">xsi</span><span class="pl-e">:</span><span class="pl-e">schemaLocation</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/beans</span>
+<span class="pl-s">    http://www.springframework.org/schema/beans/spring-beans.xsd</span>
+<span class="pl-s">    http://www.springframework.org/schema/context</span>
+<span class="pl-s">    http://www.springframework.org/schema/context/spring-context.xsd</span>
+<span class="pl-s">    http://www.springframework.org/schema/mvc</span>
+<span class="pl-s">    http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd<span class="pl-pds">"</span></span>&gt;
+    <span class="pl-c">&lt;!-- 配置SpringMVC --&gt;</span>
+    <span class="pl-c">&lt;!-- 1.开启SpringMVC注解模式 --&gt;</span>
+    <span class="pl-c">&lt;!-- 简化配置： </span>
+<span class="pl-c">        (1)自动注册DefaultAnootationHandlerMapping,AnotationMethodHandlerAdapter </span>
+<span class="pl-c">        (2)提供一些列：数据绑定，数字和日期的format @NumberFormat, @DateTimeFormat, xml,json默认读写支持 </span>
+<span class="pl-c">    --&gt;</span>
+    &lt;<span class="pl-ent">mvc</span><span class="pl-ent">:</span><span class="pl-ent">annotation-driven</span> /&gt;
+
+    <span class="pl-c">&lt;!-- 2.静态资源默认servlet配置</span>
+<span class="pl-c">        (1)加入对静态资源的处理：js,gif,png</span>
+<span class="pl-c">        (2)允许使用"/"做整体映射</span>
+<span class="pl-c">     --&gt;</span>
+     &lt;<span class="pl-ent">mvc</span><span class="pl-ent">:</span><span class="pl-ent">default-servlet-handler</span>/&gt;
+
+     <span class="pl-c">&lt;!-- 3.配置jsp 显示ViewResolver --&gt;</span>
+     &lt;<span class="pl-ent">bean</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.springframework.web.servlet.view.InternalResourceViewResolver<span class="pl-pds">"</span></span>&gt;
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>viewClass<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>org.springframework.web.servlet.view.JstlView<span class="pl-pds">"</span></span> /&gt;
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>prefix<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>/WEB-INF/jsp/<span class="pl-pds">"</span></span> /&gt;
+        &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>suffix<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>.jsp<span class="pl-pds">"</span></span> /&gt;
+     &lt;/<span class="pl-ent">bean</span>&gt;
+
+     <span class="pl-c">&lt;!-- 4.扫描web相关的bean --&gt;</span>
+     &lt;<span class="pl-ent">context</span><span class="pl-ent">:</span><span class="pl-ent">component-scan</span> <span class="pl-e">base-package</span>=<span class="pl-s"><span class="pl-pds">"</span>com.soecode.lyf.web<span class="pl-pds">"</span></span> /&gt;
+&lt;/<span class="pl-ent">beans</span>&gt;</pre></div>
+
+<hr>
+
+<p>第四步：最后就是修改<code>web.xml</code>文件了，它在<code>webapp</code>的<code>WEB-INF</code>下。</p>
+
+<p><strong>web.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">web-app</span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://xmlns.jcp.org/xml/ns/javaee<span class="pl-pds">"</span></span> <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">xsi</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.w3.org/2001/XMLSchema-instance<span class="pl-pds">"</span></span>
+    <span class="pl-e">xsi</span><span class="pl-e">:</span><span class="pl-e">schemaLocation</span>=<span class="pl-s"><span class="pl-pds">"</span>http://xmlns.jcp.org/xml/ns/javaee</span>
+<span class="pl-s">                      http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd<span class="pl-pds">"</span></span>
+    <span class="pl-e">version</span>=<span class="pl-s"><span class="pl-pds">"</span>3.1<span class="pl-pds">"</span></span> <span class="pl-e">metadata-complete</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>&gt;
+    <span class="pl-c">&lt;!-- 如果是用mvn命令生成的xml，需要修改servlet版本为3.1 --&gt;</span>
+    <span class="pl-c">&lt;!-- 配置DispatcherServlet --&gt;</span>
+    &lt;<span class="pl-ent">servlet</span>&gt;
+        &lt;<span class="pl-ent">servlet-name</span>&gt;seckill-dispatcher&lt;/<span class="pl-ent">servlet-name</span>&gt;
+        &lt;<span class="pl-ent">servlet-class</span>&gt;org.springframework.web.servlet.DispatcherServlet&lt;/<span class="pl-ent">servlet-class</span>&gt;
+        <span class="pl-c">&lt;!-- 配置springMVC需要加载的配置文件</span>
+<span class="pl-c">            spring-dao.xml,spring-service.xml,spring-web.xml</span>
+<span class="pl-c">            Mybatis - &gt; spring -&gt; springmvc</span>
+<span class="pl-c">         --&gt;</span>
+        &lt;<span class="pl-ent">init-param</span>&gt;
+            &lt;<span class="pl-ent">param-name</span>&gt;contextConfigLocation&lt;/<span class="pl-ent">param-name</span>&gt;
+            &lt;<span class="pl-ent">param-value</span>&gt;classpath:spring/spring-*.xml&lt;/<span class="pl-ent">param-value</span>&gt;
+        &lt;/<span class="pl-ent">init-param</span>&gt;
+    &lt;/<span class="pl-ent">servlet</span>&gt;
+    &lt;<span class="pl-ent">servlet-mapping</span>&gt;
+        &lt;<span class="pl-ent">servlet-name</span>&gt;seckill-dispatcher&lt;/<span class="pl-ent">servlet-name</span>&gt;
+        <span class="pl-c">&lt;!-- 默认匹配所有的请求 --&gt;</span>
+        &lt;<span class="pl-ent">url-pattern</span>&gt;/&lt;/<span class="pl-ent">url-pattern</span>&gt;
+    &lt;/<span class="pl-ent">servlet-mapping</span>&gt;
+&lt;/<span class="pl-ent">web-app</span>&gt;
+</pre></div>
+
+<hr>
+
+<p>我们在项目中经常会使用到日志，所以这里还有配置日志xml，在<code>resources</code>文件夹里新建<code>logback.xml</code>文件，所给出的日志输出格式也是最基本的控制台s呼出，大家有兴趣查看<a href="http://logback.qos.ch/manual/">logback官方文档</a>。</p>
+
+<p><strong>logback.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;<span class="pl-ent">configuration</span> <span class="pl-e">debug</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">appender</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>STDOUT<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>ch.qos.logback.core.ConsoleAppender<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c">&lt;!-- encoders are by default assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder --&gt;</span>
+        &lt;<span class="pl-ent">encoder</span>&gt;
+            &lt;<span class="pl-ent">pattern</span>&gt;%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/<span class="pl-ent">pattern</span>&gt;
+        &lt;/<span class="pl-ent">encoder</span>&gt;
+    &lt;/<span class="pl-ent">appender</span>&gt;
+
+    &lt;<span class="pl-ent">root</span> <span class="pl-e">level</span>=<span class="pl-s"><span class="pl-pds">"</span>debug<span class="pl-pds">"</span></span>&gt;
+        &lt;<span class="pl-ent">appender-ref</span> <span class="pl-e">ref</span>=<span class="pl-s"><span class="pl-pds">"</span>STDOUT<span class="pl-pds">"</span></span> /&gt;
+    &lt;/<span class="pl-ent">root</span>&gt;
+&lt;/<span class="pl-ent">configuration</span>&gt;</pre></div>
+
+<hr>
+
+<p>到目前为止，我们一共写了7个配置文件，我们一起来看下最终的<strong>配置文件结构图</strong>。</p>
+
+<p><img src="http://img.blog.csdn.net/20160618142208354" alt="配置文件结构图"></p>
+
+<hr>
+
+<h2>
+<a id="ssm框架应用实例图书管理系统" class="anchor" href="#ssm%E6%A1%86%E6%9E%B6%E5%BA%94%E7%94%A8%E5%AE%9E%E4%BE%8B%E5%9B%BE%E4%B9%A6%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>SSM框架应用实例（图书管理系统）</h2>
+
+<blockquote>
+<p>一开始想就这样结束教程，但是发现其实很多人都还不会把这个SSM框架用起来，特别是mybatis部分。那我现在就以最常见的“图书管理系统”中【查询图书】和【预约图书】业务来做一个demo吧！</p>
+</blockquote>
+
+<p>首先新建数据库名为<code>ssm</code>，再创建两张表：图书表<code>book</code>和预约图书表<code>appointment</code>，并且为<code>book</code>表初始化一些数据，sql如下。</p>
+
+<p><strong>schema.sql</strong></p>
+
+<div class="highlight highlight-source-sql"><pre><span class="pl-c">-- 创建图书表</span>
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> `<span class="pl-en">book</span>` (
+  <span class="pl-s"><span class="pl-pds">`</span>book_id<span class="pl-pds">`</span></span> <span class="pl-k">bigint</span>(<span class="pl-c1">20</span>) <span class="pl-k">NOT NULL</span> AUTO_INCREMENT COMMENT <span class="pl-s"><span class="pl-pds">'</span>图书ID<span class="pl-pds">'</span></span>,
+  <span class="pl-s"><span class="pl-pds">`</span>name<span class="pl-pds">`</span></span> <span class="pl-k">varchar</span>(<span class="pl-c1">100</span>) <span class="pl-k">NOT NULL</span> COMMENT <span class="pl-s"><span class="pl-pds">'</span>图书名称<span class="pl-pds">'</span></span>,
+  <span class="pl-s"><span class="pl-pds">`</span>number<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) <span class="pl-k">NOT NULL</span> COMMENT <span class="pl-s"><span class="pl-pds">'</span>馆藏数量<span class="pl-pds">'</span></span>,
+  <span class="pl-k">PRIMARY KEY</span> (<span class="pl-s"><span class="pl-pds">`</span>book_id<span class="pl-pds">`</span></span>)
+) ENGINE<span class="pl-k">=</span>InnoDB AUTO_INCREMENT<span class="pl-k">=</span><span class="pl-c1">1000</span> DEFAULT CHARSET<span class="pl-k">=</span>utf8 COMMENT<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>图书表<span class="pl-pds">'</span></span>
+
+<span class="pl-c">-- 初始化图书数据</span>
+<span class="pl-k">INSERT INTO</span> <span class="pl-s"><span class="pl-pds">`</span>book<span class="pl-pds">`</span></span> (<span class="pl-s"><span class="pl-pds">`</span>book_id<span class="pl-pds">`</span></span>, <span class="pl-s"><span class="pl-pds">`</span>name<span class="pl-pds">`</span></span>, <span class="pl-s"><span class="pl-pds">`</span>number<span class="pl-pds">`</span></span>)
+<span class="pl-k">VALUES</span>
+    (<span class="pl-c1">1000</span>, <span class="pl-s"><span class="pl-pds">'</span>Java程序设计<span class="pl-pds">'</span></span>, <span class="pl-c1">10</span>),
+    (<span class="pl-c1">1001</span>, <span class="pl-s"><span class="pl-pds">'</span>数据结构<span class="pl-pds">'</span></span>, <span class="pl-c1">10</span>),
+    (<span class="pl-c1">1002</span>, <span class="pl-s"><span class="pl-pds">'</span>设计模式<span class="pl-pds">'</span></span>, <span class="pl-c1">10</span>),
+    (<span class="pl-c1">1003</span>, <span class="pl-s"><span class="pl-pds">'</span>编译原理<span class="pl-pds">'</span></span>, <span class="pl-c1">10</span>)
+
+<span class="pl-c">-- 创建预约图书表</span>
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> `<span class="pl-en">appointment</span>` (
+  <span class="pl-s"><span class="pl-pds">`</span>book_id<span class="pl-pds">`</span></span> <span class="pl-k">bigint</span>(<span class="pl-c1">20</span>) <span class="pl-k">NOT NULL</span> COMMENT <span class="pl-s"><span class="pl-pds">'</span>图书ID<span class="pl-pds">'</span></span>,
+  <span class="pl-s"><span class="pl-pds">`</span>student_id<span class="pl-pds">`</span></span> <span class="pl-k">bigint</span>(<span class="pl-c1">20</span>) <span class="pl-k">NOT NULL</span> COMMENT <span class="pl-s"><span class="pl-pds">'</span>学号<span class="pl-pds">'</span></span>,
+  <span class="pl-s"><span class="pl-pds">`</span>appoint_time<span class="pl-pds">`</span></span> <span class="pl-k">timestamp</span> <span class="pl-k">NOT NULL</span> DEFAULT <span class="pl-c1">CURRENT_TIMESTAMP</span> <span class="pl-k">ON</span> <span class="pl-k">UPDATE</span> <span class="pl-c1">CURRENT_TIMESTAMP</span> COMMENT <span class="pl-s"><span class="pl-pds">'</span>预约时间<span class="pl-pds">'</span></span> ,
+  <span class="pl-k">PRIMARY KEY</span> (<span class="pl-s"><span class="pl-pds">`</span>book_id<span class="pl-pds">`</span></span>, <span class="pl-s"><span class="pl-pds">`</span>student_id<span class="pl-pds">`</span></span>),
+  INDEX <span class="pl-s"><span class="pl-pds">`</span>idx_appoint_time<span class="pl-pds">`</span></span> (<span class="pl-s"><span class="pl-pds">`</span>appoint_time<span class="pl-pds">`</span></span>)
+) ENGINE<span class="pl-k">=</span>InnoDB DEFAULT CHARSET<span class="pl-k">=</span>utf8 COMMENT<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>预约图书表<span class="pl-pds">'</span></span></pre></div>
+
+<hr>
+
+<p>在<code>entity</code>包中添加两个对应的实体，图书实体<code>Book.java</code>和预约图书实体<code>Appointment.java</code>。</p>
+
+<p><strong>Book.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.entity</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Book</span> {
+
+    <span class="pl-k">private</span> <span class="pl-k">long</span> bookId;<span class="pl-c">// 图书ID</span>
+
+    <span class="pl-k">private</span> <span class="pl-smi">String</span> name;<span class="pl-c">// 图书名称</span>
+
+    <span class="pl-k">private</span> <span class="pl-k">int</span> number;<span class="pl-c">// 馆藏数量</span>
+
+    <span class="pl-c">// 省略构造方法，getter和setter方法，toString方法</span>
+
+}</pre></div>
+
+<p><strong>Appointment.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.entity</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">java.util.Date</span>;
+
+<span class="pl-c">/**</span>
+<span class="pl-c"> * 预约图书实体</span>
+<span class="pl-c"> */</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Appointment</span> {
+
+    <span class="pl-k">private</span> <span class="pl-k">long</span> bookId;<span class="pl-c">// 图书ID</span>
+
+    <span class="pl-k">private</span> <span class="pl-k">long</span> studentId;<span class="pl-c">// 学号</span>
+
+    <span class="pl-k">private</span> <span class="pl-smi">Date</span> appointTime;<span class="pl-c">// 预约时间</span>
+
+    <span class="pl-c">// 多对一的复合属性</span>
+    <span class="pl-k">private</span> <span class="pl-smi">Book</span> book;<span class="pl-c">// 图书实体</span>
+
+    <span class="pl-c">// 省略构造方法，getter和setter方法，toString方法</span>
+
+}</pre></div>
+
+<hr>
+
+<p>在<code>dao</code>包新建接口<code>BookDao.java</code>和<code>Appointment.java</code></p>
+
+<p><strong>BookDao.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.dao</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">java.util.List</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Book</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">BookDao</span> {
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 通过ID查询单本图书</span>
+<span class="pl-c">     * </span>
+<span class="pl-c">     * @param id</span>
+<span class="pl-c">     * @return</span>
+<span class="pl-c">     */</span>
+    <span class="pl-smi">Book</span> <span class="pl-en">queryById</span>(<span class="pl-k">long</span> <span class="pl-v">id</span>);
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 查询所有图书</span>
+<span class="pl-c">     * </span>
+<span class="pl-c">     * @param offset 查询起始位置</span>
+<span class="pl-c">     * @param limit 查询条数</span>
+<span class="pl-c">     * @return</span>
+<span class="pl-c">     */</span>
+    <span class="pl-k">List&lt;<span class="pl-smi">Book</span>&gt;</span> <span class="pl-en">queryAll</span>(<span class="pl-k">@Param</span>(<span class="pl-s"><span class="pl-pds">"</span>offset<span class="pl-pds">"</span></span>) <span class="pl-k">int</span> <span class="pl-v">offset</span>, <span class="pl-k">@Param</span>(<span class="pl-s"><span class="pl-pds">"</span>limit<span class="pl-pds">"</span></span>) <span class="pl-k">int</span> <span class="pl-v">limit</span>);
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 减少馆藏数量</span>
+<span class="pl-c">     * </span>
+<span class="pl-c">     * @param bookId</span>
+<span class="pl-c">     * @return 如果影响行数等于&gt;1，表示更新的记录行数</span>
+<span class="pl-c">     */</span>
+    <span class="pl-k">int</span> <span class="pl-en">reduceNumber</span>(<span class="pl-k">long</span> <span class="pl-v">bookId</span>);
+}
+</pre></div>
+
+<p><strong>AppointmentDao.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.dao</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">org.apache.ibatis.annotations.Param</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Appointment</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">AppointmentDao</span> {
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 插入预约图书记录</span>
+<span class="pl-c">     * </span>
+<span class="pl-c">     * @param bookId</span>
+<span class="pl-c">     * @param studentId</span>
+<span class="pl-c">     * @return 插入的行数</span>
+<span class="pl-c">     */</span>
+    <span class="pl-k">int</span> <span class="pl-en">insertAppointment</span>(<span class="pl-k">@Param</span>(<span class="pl-s"><span class="pl-pds">"</span>bookId<span class="pl-pds">"</span></span>) <span class="pl-k">long</span> <span class="pl-v">bookId</span>, <span class="pl-k">@Param</span>(<span class="pl-s"><span class="pl-pds">"</span>studentId<span class="pl-pds">"</span></span>) <span class="pl-k">long</span> <span class="pl-v">studentId</span>);
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 通过主键查询预约图书记录，并且携带图书实体</span>
+<span class="pl-c">     * </span>
+<span class="pl-c">     * @param bookId</span>
+<span class="pl-c">     * @param studentId</span>
+<span class="pl-c">     * @return</span>
+<span class="pl-c">     */</span>
+    <span class="pl-smi">Appointment</span> <span class="pl-en">queryByKeyWithBook</span>(<span class="pl-k">@Param</span>(<span class="pl-s"><span class="pl-pds">"</span>bookId<span class="pl-pds">"</span></span>) <span class="pl-k">long</span> <span class="pl-v">bookId</span>, <span class="pl-k">@Param</span>(<span class="pl-s"><span class="pl-pds">"</span>studentId<span class="pl-pds">"</span></span>) <span class="pl-k">long</span> <span class="pl-v">studentId</span>);
+
+}</pre></div>
+
+<p><strong>提示</strong>：这里为什么要给方法的参数添加<code>@Param</code>注解呢？是因为该方法有两个或以上的参数，一定要加，不然mybatis识别不了。上面的<code>BookDao</code>接口的<code>queryById</code>方法和<code>reduceNumber</code>方法只有一个参数<code>book_id</code>，所以可以不用加 <code>@Param</code>注解，当然加了也无所谓~</p>
+
+<hr>
+
+<p>注意，这里不需要实现dao接口不用编写daoImpl， mybatis会给我们动态实现，但是我们需要编写相应的mapper。
+在<code>mapper</code>目录里新建两个文件<code>BookDao.xml</code>和<code>AppointmentDao.xml</code>，分别对应上面两个dao接口，代码如下。</p>
+
+<p><strong>BookDao.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;!<span class="pl-k">DOCTYPE</span> <span class="pl-v">mapper</span>
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;
+&lt;<span class="pl-ent">mapper</span> <span class="pl-e">namespace</span>=<span class="pl-s"><span class="pl-pds">"</span>com.soecode.lyf.dao.BookDao<span class="pl-pds">"</span></span>&gt;
+    <span class="pl-c">&lt;!-- 目的：为dao接口方法提供sql语句配置 --&gt;</span>
+    &lt;<span class="pl-ent">select</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>queryById<span class="pl-pds">"</span></span> <span class="pl-e">resultType</span>=<span class="pl-s"><span class="pl-pds">"</span>Book<span class="pl-pds">"</span></span> <span class="pl-e">parameterType</span>=<span class="pl-s"><span class="pl-pds">"</span>long<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c">&lt;!-- 具体的sql --&gt;</span>
+        SELECT
+            book_id,
+            name,
+            number
+        FROM
+            book
+        WHERE
+            book_id = #{bookId}
+    &lt;/<span class="pl-ent">select</span>&gt;
+
+    &lt;<span class="pl-ent">select</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>queryAll<span class="pl-pds">"</span></span> <span class="pl-e">resultType</span>=<span class="pl-s"><span class="pl-pds">"</span>Book<span class="pl-pds">"</span></span>&gt;
+        SELECT
+            book_id,
+            name,
+            number
+        FROM
+            book
+        ORDER BY
+            book_id
+        LIMIT #{offset}, #{limit}
+    &lt;/<span class="pl-ent">select</span>&gt;
+
+    &lt;<span class="pl-ent">update</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>reduceNumber<span class="pl-pds">"</span></span>&gt;
+        UPDATE book
+        SET number = number - 1
+        WHERE
+            book_id = #{bookId}
+        AND number &gt; 0
+    &lt;/<span class="pl-ent">update</span>&gt;
+&lt;/<span class="pl-ent">mapper</span>&gt;</pre></div>
+
+<p><strong>AppointmentDao.xml</strong></p>
+
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;!<span class="pl-k">DOCTYPE</span> <span class="pl-v">mapper</span>
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;
+&lt;<span class="pl-ent">mapper</span> <span class="pl-e">namespace</span>=<span class="pl-s"><span class="pl-pds">"</span>com.soecode.lyf.dao.AppointmentDao<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">insert</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>insertAppointment<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c">&lt;!-- ignore 主键冲突，报错 --&gt;</span>
+        INSERT ignore INTO appointment (book_id, student_id)
+        VALUES (#{bookId}, #{studentId})
+    &lt;/<span class="pl-ent">insert</span>&gt;
+
+    &lt;<span class="pl-ent">select</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>queryByKeyWithBook<span class="pl-pds">"</span></span> <span class="pl-e">resultType</span>=<span class="pl-s"><span class="pl-pds">"</span>Appointment<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c">&lt;!-- 如何告诉MyBatis把结果映射到Appointment同时映射book属性 --&gt;</span>
+        <span class="pl-c">&lt;!-- 可以自由控制SQL --&gt;</span>
+        SELECT
+            a.book_id,
+            a.student_id,
+            a.appoint_time,
+            b.book_id "book.book_id",
+            b.`name` "book.name",
+            b.number "book.number"
+        FROM
+            appointment a
+        INNER JOIN book b ON a.book_id = b.book_id
+        WHERE
+            a.book_id = #{bookId}
+        AND a.student_id = #{studentId}
+    &lt;/<span class="pl-ent">select</span>&gt;
+&lt;/<span class="pl-ent">mapper</span>&gt;</pre></div>
+
+<p><strong>mapper总结</strong>：<code>namespace</code>是该xml对应的接口全名，<code>select</code>和<code>update</code>中的<code>id</code>对应方法名，<code>resultType</code>是返回值类型，<code>parameterType</code>是参数类型（这个其实可选），最后<code>#{...}</code>中填写的是方法的参数，看懂了是不是很简单！！我也这么觉得~ 还有一个小技巧要交给大家，就是在返回<code>Appointment</code>对象包含了一个属性名为<code>book</code>的Book对象，那么可以使用<code>"book.属性名"</code>的方式来取值，看上面<code>queryByKeyWithBook</code>方法的sql。</p>
+
+<hr>
+
+<p><code>dao</code>层写完了，接下来<code>test</code>对应的<code>package</code>写我们测试方法吧。
+因为我们之后会写很多测试方法，在测试前需要让程序读入spring-dao和mybatis等配置文件，所以我这里就抽离出来一个<code>BaseTest</code>类，只要是测试方法就继承它，这样那些繁琐的重复的代码就不用写那么多了~</p>
+
+<p><strong>BaseTest.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">org.junit.runner.RunWith</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.test.context.ContextConfiguration</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.test.context.junit4.SpringJUnit4ClassRunner</span>;
+
+<span class="pl-c">/**</span>
+<span class="pl-c"> * 配置spring和junit整合，junit启动时加载springIOC容器 spring-test,junit</span>
+<span class="pl-c"> */</span>
+@RunWith(<span class="pl-smi">SpringJUnit4ClassRunner</span><span class="pl-k">.</span>class)
+<span class="pl-c">// 告诉junit spring配置文件</span>
+@ContextConfiguration({ <span class="pl-s"><span class="pl-pds">"</span>classpath:spring/spring-dao.xml<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>classpath:spring/spring-service.xml<span class="pl-pds">"</span></span> })
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">BaseTest</span> {
+
+}
+</pre></div>
+
+<p>因为<code>spring-service</code>在<code>service</code>层的测试中会时候到，这里也一起引入算了！</p>
+
+<p>新建<code>BookDaoTest.java</code>和<code>AppointmentDaoTest.java</code>两个dao测试文件。</p>
+
+<p><strong>BookDaoTest.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.dao</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">java.util.List</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">org.junit.Test</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.beans.factory.annotation.Autowired</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.BaseTest</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Book</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">BookDaoTest</span> <span class="pl-k">extends</span> <span class="pl-e">BaseTest</span> {
+
+    <span class="pl-k">@Autowired</span>
+    <span class="pl-k">private</span> <span class="pl-smi">BookDao</span> bookDao;
+
+    <span class="pl-k">@Test</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">testQueryById</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+        <span class="pl-k">long</span> bookId <span class="pl-k">=</span> <span class="pl-c1">1000</span>;
+        <span class="pl-smi">Book</span> book <span class="pl-k">=</span> bookDao<span class="pl-k">.</span>queryById(bookId);
+        <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(book);
+    }
+
+    <span class="pl-k">@Test</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">testQueryAll</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+        <span class="pl-k">List&lt;<span class="pl-smi">Book</span>&gt;</span> books <span class="pl-k">=</span> bookDao<span class="pl-k">.</span>queryAll(<span class="pl-c1">0</span>, <span class="pl-c1">4</span>);
+        <span class="pl-k">for</span> (<span class="pl-smi">Book</span> book <span class="pl-k">:</span> books) {
+            <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(book);
+        }
+    }
+
+    <span class="pl-k">@Test</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">testReduceNumber</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+        <span class="pl-k">long</span> bookId <span class="pl-k">=</span> <span class="pl-c1">1000</span>;
+        <span class="pl-k">int</span> update <span class="pl-k">=</span> bookDao<span class="pl-k">.</span>reduceNumber(bookId);
+        <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(<span class="pl-s"><span class="pl-pds">"</span>update=<span class="pl-pds">"</span></span> <span class="pl-k">+</span> update);
+    }
+
+}</pre></div>
+
+<h4>
+<a id="bookdaotest测试结果" class="anchor" href="#bookdaotest%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>BookDaoTest测试结果</h4>
+
+<p><strong><em>testQueryById</em></strong>
+<img src="http://img.bbs.csdn.net/upload/201606/18/1466255160_717902.png" alt="testQueryById"></p>
+
+<p><strong><em>testQueryAll</em></strong>
+<img src="http://img.bbs.csdn.net/upload/201606/18/1466255452_743822.png" alt="testQueryAll"></p>
+
+<p><strong><em>testReduceNumber</em></strong>
+<img src="http://img.bbs.csdn.net/upload/201606/18/1466255505_256048.png" alt="testReduceNumber"></p>
+
+<p><strong>AppointmentDaoTest.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.dao</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">org.junit.Test</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.beans.factory.annotation.Autowired</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.BaseTest</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Appointment</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">AppointmentDaoTest</span> <span class="pl-k">extends</span> <span class="pl-e">BaseTest</span> {
+
+    <span class="pl-k">@Autowired</span>
+    <span class="pl-k">private</span> <span class="pl-smi">AppointmentDao</span> appointmentDao;
+
+    <span class="pl-k">@Test</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">testInsertAppointment</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+        <span class="pl-k">long</span> bookId <span class="pl-k">=</span> <span class="pl-c1">1000</span>;
+        <span class="pl-k">long</span> studentId <span class="pl-k">=</span> <span class="pl-c1">12345678910L</span>;
+        <span class="pl-k">int</span> insert <span class="pl-k">=</span> appointmentDao<span class="pl-k">.</span>insertAppointment(bookId, studentId);
+        <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(<span class="pl-s"><span class="pl-pds">"</span>insert=<span class="pl-pds">"</span></span> <span class="pl-k">+</span> insert);
+    }
+
+    <span class="pl-k">@Test</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">testQueryByKeyWithBook</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+        <span class="pl-k">long</span> bookId <span class="pl-k">=</span> <span class="pl-c1">1000</span>;
+        <span class="pl-k">long</span> studentId <span class="pl-k">=</span> <span class="pl-c1">12345678910L</span>;
+        <span class="pl-smi">Appointment</span> appointment <span class="pl-k">=</span> appointmentDao<span class="pl-k">.</span>queryByKeyWithBook(bookId, studentId);
+        <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(appointment);
+        <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(appointment<span class="pl-k">.</span>getBook());
+    }
+
+}</pre></div>
+
+<h4>
+<a id="appointmentdaotest测试结果" class="anchor" href="#appointmentdaotest%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>AppointmentDaoTest测试结果</h4>
+
+<p><strong><em>testInsertAppointment</em></strong>
+<img src="http://img.bbs.csdn.net/upload/201606/18/1466255520_227298.png" alt="testInsertAppointment"></p>
+
+<p><strong><em>testQueryByKeyWithBook</em></strong>
+<img src="http://img.bbs.csdn.net/upload/201606/18/1466255537_831651.png" alt="testQueryByKeyWithBook"></p>
+
+<hr>
+
+<p>嗯，到这里一切到很顺利~那么我们继续service层的编码吧~可能下面开始信息里比较大，大家要做好心理准备~</p>
+
+<p>首先，在写我们的业务之前，我们先定义几个预约图书操作返回码的数据字典，我们这类使用枚举类，没听过的小伙伴要好好恶补一下了（我也是最近才学到的= =）</p>
+
+<p><strong>预约业务操作返回码说明</strong></p>
+
+<table>
+<thead>
+<tr>
+<th>返回码</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>预约成功</td>
+</tr>
+<tr>
+<td>0</td>
+<td>库存不足</td>
+</tr>
+<tr>
+<td>-1</td>
+<td>重复预约</td>
+</tr>
+<tr>
+<td>-2</td>
+<td>系统异常</td>
+</tr>
+</tbody>
+</table>
+
+<p>新建一个包叫<code>enums</code>，在里面新建一个枚举类<code>AppointStateEnum.java</code>，用来定义预约业务的数据字典，没听懂没关系，我们直接看代码吧~是不是感觉有模有样了！</p>
+
+<p><strong>AppointStateEnum.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.enums</span>;
+
+<span class="pl-c">/**</span>
+<span class="pl-c"> * 使用枚举表述常量数据字典</span>
+<span class="pl-c"> */</span>
+<span class="pl-k">public</span> <span class="pl-k">enum</span> <span class="pl-en">AppointStateEnum</span> {
+
+    <span class="pl-c1">SUCCESS</span>(<span class="pl-c1">1</span>, <span class="pl-s"><span class="pl-pds">"</span>预约成功<span class="pl-pds">"</span></span>), <span class="pl-c1">NO_NUMBER</span>(<span class="pl-c1">0</span>, <span class="pl-s"><span class="pl-pds">"</span>库存不足<span class="pl-pds">"</span></span>), <span class="pl-c1">REPEAT_APPOINT</span>(<span class="pl-k">-</span><span class="pl-c1">1</span>, <span class="pl-s"><span class="pl-pds">"</span>重复预约<span class="pl-pds">"</span></span>), <span class="pl-c1">INNER_ERROR</span>(<span class="pl-k">-</span><span class="pl-c1">2</span>, <span class="pl-s"><span class="pl-pds">"</span>系统异常<span class="pl-pds">"</span></span>);
+
+    <span class="pl-k">private</span> <span class="pl-k">int</span> state;
+
+    <span class="pl-k">private</span> <span class="pl-smi">String</span> stateInfo;
+
+    <span class="pl-k">private</span> <span class="pl-en">AppointStateEnum</span>(<span class="pl-k">int</span> <span class="pl-v">state</span>, <span class="pl-smi">String</span> <span class="pl-v">stateInfo</span>) {
+        <span class="pl-v">this</span><span class="pl-k">.</span>state <span class="pl-k">=</span> state;
+        <span class="pl-v">this</span><span class="pl-k">.</span>stateInfo <span class="pl-k">=</span> stateInfo;
+    }
+
+    <span class="pl-k">public</span> <span class="pl-k">int</span> <span class="pl-en">getState</span>() {
+        <span class="pl-k">return</span> state;
+    }
+
+    <span class="pl-k">public</span> <span class="pl-smi">String</span> <span class="pl-en">getStateInfo</span>() {
+        <span class="pl-k">return</span> stateInfo;
+    }
+
+    <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-smi">AppointStateEnum</span> <span class="pl-en">stateOf</span>(<span class="pl-k">int</span> <span class="pl-v">index</span>) {
+        <span class="pl-k">for</span> (<span class="pl-smi">AppointStateEnum</span> state <span class="pl-k">:</span> values()) {
+            <span class="pl-k">if</span> (state<span class="pl-k">.</span>getState() <span class="pl-k">==</span> index) {
+                <span class="pl-k">return</span> state;
+            }
+        }
+        <span class="pl-k">return</span> <span class="pl-c1">null</span>;
+    }
+
+}</pre></div>
+
+<hr>
+
+<p>接下来，在<code>dto</code>包下新建<code>AppointExecution.java</code>用来存储我们执行预约操作的返回结果。</p>
+
+<p><strong>AppointExecution.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.dto</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Appointment</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.enums.AppointStateEnum</span>;
+
+<span class="pl-c">/**</span>
+<span class="pl-c"> * 封装预约执行后结果</span>
+<span class="pl-c"> */</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">AppointExecution</span> {
+
+    <span class="pl-c">// 图书ID</span>
+    <span class="pl-k">private</span> <span class="pl-k">long</span> bookId;
+
+    <span class="pl-c">// 秒杀预约结果状态</span>
+    <span class="pl-k">private</span> <span class="pl-k">int</span> state;
+
+    <span class="pl-c">// 状态标识</span>
+    <span class="pl-k">private</span> <span class="pl-smi">String</span> stateInfo;
+
+    <span class="pl-c">// 预约成功对象</span>
+    <span class="pl-k">private</span> <span class="pl-smi">Appointment</span> appointment;
+
+    <span class="pl-k">public</span> <span class="pl-en">AppointExecution</span>() {
+    }
+
+    <span class="pl-c">// 预约失败的构造器</span>
+    <span class="pl-k">public</span> <span class="pl-en">AppointExecution</span>(<span class="pl-k">long</span> <span class="pl-v">bookId</span>, <span class="pl-smi">AppointStateEnum</span> <span class="pl-v">stateEnum</span>) {
+        <span class="pl-v">this</span><span class="pl-k">.</span>bookId <span class="pl-k">=</span> bookId;
+        <span class="pl-v">this</span><span class="pl-k">.</span>state <span class="pl-k">=</span> stateEnum<span class="pl-k">.</span>getState();
+        <span class="pl-v">this</span><span class="pl-k">.</span>stateInfo <span class="pl-k">=</span> stateEnum<span class="pl-k">.</span>getStateInfo();
+    }
+
+    <span class="pl-c">// 预约成功的构造器</span>
+    <span class="pl-k">public</span> <span class="pl-en">AppointExecution</span>(<span class="pl-k">long</span> <span class="pl-v">bookId</span>, <span class="pl-smi">AppointStateEnum</span> <span class="pl-v">stateEnum</span>, <span class="pl-smi">Appointment</span> <span class="pl-v">appointment</span>) {
+        <span class="pl-v">this</span><span class="pl-k">.</span>bookId <span class="pl-k">=</span> bookId;
+        <span class="pl-v">this</span><span class="pl-k">.</span>state <span class="pl-k">=</span> stateEnum<span class="pl-k">.</span>getState();
+        <span class="pl-v">this</span><span class="pl-k">.</span>stateInfo <span class="pl-k">=</span> stateEnum<span class="pl-k">.</span>getStateInfo();
+        <span class="pl-v">this</span><span class="pl-k">.</span>appointment <span class="pl-k">=</span> appointment;
+    }
+
+    <span class="pl-c">// 省略getter和setter方法，toString方法</span>
+
+}
+</pre></div>
+
+<hr>
+
+<p>咱们终于可以编写业务代码了，在<code>service</code>包下新建<code>BookService.java</code>图书业务接口。</p>
+
+<p><strong>BookService.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.service</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">java.util.List</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.dto.AppointExecution</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Book</span>;
+
+<span class="pl-c">/**</span>
+<span class="pl-c"> * 业务接口：站在"使用者"角度设计接口 三个方面：方法定义粒度，参数，返回类型（return 类型/异常）</span>
+<span class="pl-c"> */</span>
+<span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">BookService</span> {
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 查询一本图书</span>
+<span class="pl-c">     * </span>
+<span class="pl-c">     * @param bookId</span>
+<span class="pl-c">     * @return</span>
+<span class="pl-c">     */</span>
+    <span class="pl-smi">Book</span> <span class="pl-en">getById</span>(<span class="pl-k">long</span> <span class="pl-v">bookId</span>);
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 查询所有图书</span>
+<span class="pl-c">     * </span>
+<span class="pl-c">     * @return</span>
+<span class="pl-c">     */</span>
+    <span class="pl-k">List&lt;<span class="pl-smi">Book</span>&gt;</span> <span class="pl-en">getList</span>();
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 预约图书</span>
+<span class="pl-c">     * </span>
+<span class="pl-c">     * @param bookId</span>
+<span class="pl-c">     * @param studentId</span>
+<span class="pl-c">     * @return</span>
+<span class="pl-c">     */</span>
+    <span class="pl-smi">AppointExecution</span> <span class="pl-en">appoint</span>(<span class="pl-k">long</span> <span class="pl-v">bookId</span>, <span class="pl-k">long</span> <span class="pl-v">studentId</span>);
+
+}</pre></div>
+
+<p>在<code>service.impl</code>包下新建<code>BookServiceImpl.java</code>使用<code>BookService</code>接口，并实现里面的方法。</p>
+
+<p><strong>BookServiceImpl</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.service.impl</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">java.util.List</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">org.slf4j.Logger</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.slf4j.LoggerFactory</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.beans.factory.annotation.Autowired</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.stereotype.Service</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.transaction.annotation.Transactional</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.dao.AppointmentDao</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.dao.BookDao</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.dto.AppointExecution</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Appointment</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Book</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.enums.AppointStateEnum</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.service.BookService</span>;
+
+@<span class="pl-smi">Service</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">BookServiceImpl</span> <span class="pl-k">implements</span> <span class="pl-e">BookService</span> {
+
+    <span class="pl-k">private</span> <span class="pl-smi">Logger</span> logger <span class="pl-k">=</span> <span class="pl-smi">LoggerFactory</span><span class="pl-k">.</span>getLogger(<span class="pl-v">this</span><span class="pl-k">.</span>getClass());
+
+    <span class="pl-c">// 注入Service依赖</span>
+    <span class="pl-k">@Autowired</span>
+    <span class="pl-k">private</span> <span class="pl-smi">BookDao</span> bookDao;
+
+    <span class="pl-k">@Autowired</span>
+    <span class="pl-k">private</span> <span class="pl-smi">AppointmentDao</span> appointmentDao;
+
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">public</span> <span class="pl-smi">Book</span> <span class="pl-en">getById</span>(<span class="pl-k">long</span> <span class="pl-v">bookId</span>) {
+        <span class="pl-k">return</span> bookDao<span class="pl-k">.</span>queryById(bookId);
+    }
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">Book</span>&gt;</span> <span class="pl-en">getList</span>() {
+        <span class="pl-k">return</span> bookDao<span class="pl-k">.</span>queryAll(<span class="pl-c1">0</span>, <span class="pl-c1">1000</span>);
+    }
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">@Transactional</span>
+    <span class="pl-c">/**</span>
+<span class="pl-c">     * 使用注解控制事务方法的优点： 1.开发团队达成一致约定，明确标注事务方法的编程风格</span>
+<span class="pl-c">     * 2.保证事务方法的执行时间尽可能短，不要穿插其他网络操作，RPC/HTTP请求或者剥离到事务方法外部</span>
+<span class="pl-c">     * 3.不是所有的方法都需要事务，如只有一条修改操作，只读操作不需要事务控制</span>
+<span class="pl-c">     */</span>
+    <span class="pl-k">public</span> <span class="pl-smi">AppointExecution</span> <span class="pl-en">appoint</span>(<span class="pl-k">long</span> <span class="pl-v">bookId</span>, <span class="pl-k">long</span> <span class="pl-v">studentId</span>) {
+        <span class="pl-k">try</span> {
+            <span class="pl-c">// 减库存</span>
+            <span class="pl-k">int</span> update <span class="pl-k">=</span> bookDao<span class="pl-k">.</span>reduceNumber(bookId);
+            <span class="pl-k">if</span> (update <span class="pl-k">&lt;=</span> <span class="pl-c1">0</span>) {<span class="pl-c">// 库存不足</span>
+                <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-smi">AppointExecution</span>(bookId, <span class="pl-smi">AppointStateEnum</span><span class="pl-c1"><span class="pl-k">.</span>NO_NUMBER</span>);
+            } <span class="pl-k">else</span> {
+                <span class="pl-c">// 执行预约操作</span>
+                <span class="pl-k">int</span> insert <span class="pl-k">=</span> appointmentDao<span class="pl-k">.</span>insertAppointment(bookId, studentId);
+                <span class="pl-k">if</span> (insert <span class="pl-k">&lt;=</span> <span class="pl-c1">0</span>) {<span class="pl-c">// 重复预约</span>
+                    <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-smi">AppointExecution</span>(bookId, <span class="pl-smi">AppointStateEnum</span><span class="pl-c1"><span class="pl-k">.</span>REPEAT_APPOINT</span>);
+                } <span class="pl-k">else</span> {<span class="pl-c">// 预约成功</span>
+                    <span class="pl-smi">Appointment</span> appointment <span class="pl-k">=</span> appointmentDao<span class="pl-k">.</span>queryByKeyWithBook(bookId, studentId);
+                    <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-smi">AppointExecution</span>(bookId, <span class="pl-smi">AppointStateEnum</span><span class="pl-c1"><span class="pl-k">.</span>SUCCESS</span>, appointment);
+                }
+            }
+        } <span class="pl-k">catch</span> (<span class="pl-smi">Exception</span> e) {
+            logger<span class="pl-k">.</span>error(e<span class="pl-k">.</span>getMessage(), e);
+            <span class="pl-c">// 所有编译期异常转换为运行期异常</span>
+            <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-smi">AppointExecution</span>(bookId, <span class="pl-smi">AppointStateEnum</span><span class="pl-c1"><span class="pl-k">.</span>INNER_ERROR</span>);
+        }
+    }
+
+}
+</pre></div>
+
+<hr>
+
+<p>下面我们来测试一下我们的业务代码吧~因为查询图书的业务不复杂，所以这里只演示我们最重要的预约图书业务！！</p>
+
+<p><strong>BookServiceImplTest.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.service.impl</span>;
+
+<span class="pl-k">import static</span> <span class="pl-smi">org.junit.Assert.fail</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">org.junit.Test</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.beans.factory.annotation.Autowired</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.BaseTest</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.dto.AppointExecution</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.service.BookService</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">BookServiceImplTest</span> <span class="pl-k">extends</span> <span class="pl-e">BaseTest</span> {
+
+    <span class="pl-k">@Autowired</span>
+    <span class="pl-k">private</span> <span class="pl-smi">BookService</span> bookService;
+
+    <span class="pl-k">@Test</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">testAppoint</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+        <span class="pl-k">long</span> bookId <span class="pl-k">=</span> <span class="pl-c1">1001</span>;
+        <span class="pl-k">long</span> studentId <span class="pl-k">=</span> <span class="pl-c1">12345678910L</span>;
+        <span class="pl-smi">AppointExecution</span> execution <span class="pl-k">=</span> bookService<span class="pl-k">.</span>appoint(bookId, studentId);
+        <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(execution);
+    }
+
+}
+</pre></div>
+
+<h4>
+<a id="bookserviceimpltest测试结果" class="anchor" href="#bookserviceimpltest%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>BookServiceImplTest测试结果</h4>
+
+<p><strong><em>testAppoint</em></strong>
+<img src="http://img.bbs.csdn.net/upload/201606/19/1466270053_292015.png" alt="testAppoint"></p>
+
+<p>首次执行是“预约成功”，如果再次执行的话，应该会出现“重复预约”，哈哈，我们所有的后台代码都通过单元测试啦~~是不是很开心~</p>
+
+<hr>
+
+<p>咱们还需要在<code>dto</code>包里新建一个封装json返回结果的类<code>Result.java</code>，设计成泛型。</p>
+
+<p><strong>Result.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.dto</span>;
+
+<span class="pl-c">/**</span>
+<span class="pl-c"> * 封装json对象，所有返回结果都使用它</span>
+<span class="pl-c"> */</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Result</span>&lt;T&gt; {
+
+    <span class="pl-k">private</span> <span class="pl-k">boolean</span> success;<span class="pl-c">// 是否成功标志</span>
+
+    <span class="pl-k">private</span> <span class="pl-smi">T</span> data;<span class="pl-c">// 成功时返回的数据</span>
+
+    <span class="pl-k">private</span> <span class="pl-smi">String</span> error;<span class="pl-c">// 错误信息</span>
+
+    <span class="pl-k">public</span> <span class="pl-en">Result</span>() {
+    }
+
+    <span class="pl-c">// 成功时的构造器</span>
+    <span class="pl-k">public</span> <span class="pl-en">Result</span>(<span class="pl-k">boolean</span> <span class="pl-v">success</span>, <span class="pl-smi">T</span> <span class="pl-v">data</span>) {
+        <span class="pl-v">this</span><span class="pl-k">.</span>success <span class="pl-k">=</span> success;
+        <span class="pl-v">this</span><span class="pl-k">.</span>data <span class="pl-k">=</span> data;
+    }
+
+    <span class="pl-c">// 错误时的构造器</span>
+    <span class="pl-k">public</span> <span class="pl-en">Result</span>(<span class="pl-k">boolean</span> <span class="pl-v">success</span>, <span class="pl-smi">String</span> <span class="pl-v">error</span>) {
+        <span class="pl-v">this</span><span class="pl-k">.</span>success <span class="pl-k">=</span> success;
+        <span class="pl-v">this</span><span class="pl-k">.</span>error <span class="pl-k">=</span> error;
+    }
+
+    <span class="pl-c">// 省略getter和setter方法</span>
+}
+</pre></div>
+
+<hr>
+
+<p>最后，我们写web层，也就是controller，我们在<code>web</code>包下新建<code>BookController.java</code>文件。</p>
+
+<p><strong>BookController.java</strong></p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">com.soecode.lyf.web</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">java.util.List</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">org.apache.ibatis.annotations.Param</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.slf4j.Logger</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.slf4j.LoggerFactory</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.beans.factory.annotation.Autowired</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.stereotype.Controller</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.ui.Model</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.web.bind.annotation.PathVariable</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.web.bind.annotation.RequestMapping</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.web.bind.annotation.RequestMethod</span>;
+<span class="pl-k">import</span> <span class="pl-smi">org.springframework.web.bind.annotation.ResponseBody</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.dto.AppointExecution</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.dto.Result</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.entity.Book</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.soecode.lyf.service.BookService</span>;
+
+@<span class="pl-smi">Controller</span>
+@RequestMapping(<span class="pl-s"><span class="pl-pds">"</span>/book<span class="pl-pds">"</span></span>) <span class="pl-c">// url:/模块/资源/{id}/细分 /seckill/list</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">BookController</span> {
+
+    <span class="pl-k">private</span> <span class="pl-smi">Logger</span> logger <span class="pl-k">=</span> <span class="pl-smi">LoggerFactory</span><span class="pl-k">.</span>getLogger(<span class="pl-v">this</span><span class="pl-k">.</span>getClass());
+
+    <span class="pl-k">@Autowired</span>
+    <span class="pl-k">private</span> <span class="pl-smi">BookService</span> bookService;
+
+    <span class="pl-k">@RequestMapping</span>(<span class="pl-c1">value</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>/list<span class="pl-pds">"</span></span>, <span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-smi">RequestMethod</span><span class="pl-c1"><span class="pl-k">.</span>GET</span>)
+    <span class="pl-k">private</span> <span class="pl-smi">String</span> <span class="pl-en">list</span>(<span class="pl-smi">Model</span> <span class="pl-v">model</span>) {
+        <span class="pl-k">List&lt;<span class="pl-smi">Book</span>&gt;</span> list <span class="pl-k">=</span> bookService<span class="pl-k">.</span>getList();
+        model<span class="pl-k">.</span>addAttribute(<span class="pl-s"><span class="pl-pds">"</span>list<span class="pl-pds">"</span></span>, list);
+        <span class="pl-c">// list.jsp + model = ModelAndView</span>
+        <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>list<span class="pl-pds">"</span></span>;<span class="pl-c">// WEB-INF/jsp/"list".jsp</span>
+    }
+
+    <span class="pl-c">// ajax json</span>
+    <span class="pl-k">@RequestMapping</span>(<span class="pl-c1">value</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>/{bookId}/detail<span class="pl-pds">"</span></span>, <span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-smi">RequestMethod</span><span class="pl-c1"><span class="pl-k">.</span>GET</span>)
+    <span class="pl-k">@ResponseBody</span>
+    <span class="pl-k">private</span> <span class="pl-smi">String</span> <span class="pl-en">detail</span>(<span class="pl-k">@PathVariable</span>(<span class="pl-s"><span class="pl-pds">"</span>bookId<span class="pl-pds">"</span></span>) <span class="pl-smi">Long</span> <span class="pl-v">bookId</span>, <span class="pl-smi">Model</span> <span class="pl-v">model</span>) {
+        <span class="pl-k">if</span> (bookId <span class="pl-k">==</span> <span class="pl-c1">null</span>) {
+            <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>redirect:/book/list<span class="pl-pds">"</span></span>;
+        }
+        <span class="pl-smi">Book</span> book <span class="pl-k">=</span> bookService<span class="pl-k">.</span>getById(bookId);
+        <span class="pl-k">if</span> (book <span class="pl-k">==</span> <span class="pl-c1">null</span>) {
+            <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>forward:/book/list<span class="pl-pds">"</span></span>;
+        }
+        model<span class="pl-k">.</span>addAttribute(<span class="pl-s"><span class="pl-pds">"</span>book<span class="pl-pds">"</span></span>, book);
+        <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>detail<span class="pl-pds">"</span></span>;
+    }
+
+    <span class="pl-k">@RequestMapping</span>(<span class="pl-c1">value</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>/{bookId}/appoint<span class="pl-pds">"</span></span>, <span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-smi">RequestMethod</span><span class="pl-c1"><span class="pl-k">.</span>POST</span>, <span class="pl-c1">produces</span> <span class="pl-k">=</span> {
+            <span class="pl-s"><span class="pl-pds">"</span>application/json; charset=utf-8<span class="pl-pds">"</span></span> })
+    <span class="pl-k">private</span> <span class="pl-k">Result&lt;<span class="pl-smi">AppointExecution</span>&gt;</span> <span class="pl-en">appoint</span>(<span class="pl-k">@PathVariable</span>(<span class="pl-s"><span class="pl-pds">"</span>bookId<span class="pl-pds">"</span></span>) <span class="pl-smi">Long</span> <span class="pl-v">bookId</span>, <span class="pl-k">@Param</span>(<span class="pl-s"><span class="pl-pds">"</span>studentId<span class="pl-pds">"</span></span>) <span class="pl-smi">Long</span> <span class="pl-v">studentId</span>) {
+        <span class="pl-k">if</span> (studentId <span class="pl-k">==</span> <span class="pl-c1">null</span> <span class="pl-k">||</span> studentId<span class="pl-k">.</span>equals(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>)) {
+            <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-k">Result&lt;&gt;</span>(<span class="pl-c1">false</span>, <span class="pl-s"><span class="pl-pds">"</span>学号不能为空<span class="pl-pds">"</span></span>);
+        }
+        <span class="pl-smi">AppointExecution</span> execution <span class="pl-k">=</span> bookService<span class="pl-k">.</span>appoint(bookId, studentId);
+        <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-k">Result&lt;<span class="pl-smi">AppointExecution</span>&gt;</span>(<span class="pl-c1">true</span>, execution);
+    }
+
+}
+</pre></div>
+
+<p>因为我比较懒，所以我们就不测试controller了,好讨厌写前端，呜呜呜~</p>
+
+<p>到此，我们的SSM框架整合配置，与应用实例部分已经结束了，我把所有源码和jar包一起打包放在了我的GitHub上，需要的可以去下载，喜欢就给个star吧，这篇东西写了两个晚上也不容易啊。</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/liyifeng1994/ssm">ssm</a> is maintained by <a href="https://github.com/liyifeng1994">liyifeng1994</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
